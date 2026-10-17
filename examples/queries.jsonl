@@ -1,0 +1,24 @@
+{"qid": "q01", "query": "how do I stop people guessing my server login password", "relevant": ["ssh-hardening", "firewall-basics"]}
+{"qid": "q02", "query": "why should administrators not sign in directly as root", "relevant": ["ssh-hardening"]}
+{"qid": "q03", "query": "make my container image smaller by dropping the compiler", "relevant": ["docker-images"]}
+{"qid": "q04", "query": "Dockerfile order so dependency install is cached", "relevant": ["docker-images"]}
+{"qid": "q05", "query": "websocket connection closes right after handshake behind proxy", "relevant": ["nginx-reverse-proxy"]}
+{"qid": "q06", "query": "streamed LLM tokens arrive all at once through nginx", "relevant": ["nginx-reverse-proxy"]}
+{"qid": "q07", "query": "get free certificates automatically and renew them", "relevant": ["tls-certificates"]}
+{"qid": "q08", "query": "which TLS versions and ciphers should be enabled", "relevant": ["tls-certificates"]}
+{"qid": "q09", "query": "how many copies of backup data and where to keep them", "relevant": ["backups"]}
+{"qid": "q10", "query": "prove that backups can be recovered", "relevant": ["backups"]}
+{"qid": "q11", "query": "avoid paging on short latency spikes", "relevant": ["prometheus-alerting"]}
+{"qid": "q12", "query": "unit test alert rules before deploying", "relevant": ["prometheus-alerting"]}
+{"qid": "q13", "query": "difference between liveness and readiness checks", "relevant": ["kubernetes-probes"]}
+{"qid": "q14", "query": "pods restart in a loop when the database goes down", "relevant": ["kubernetes-probes"]}
+{"qid": "q15", "query": "undo a bad commit on a shared branch without rewriting history", "relevant": ["git-workflow"]}
+{"qid": "q16", "query": "avoid long lived feature branches", "relevant": ["git-workflow"]}
+{"qid": "q17", "query": "where do I declare dependencies and build backend for a python project", "relevant": ["python-packaging"]}
+{"qid": "q18", "query": "should a library pin exact dependency versions", "relevant": ["python-packaging"]}
+{"qid": "q19", "query": "reduce RAM needed to run a language model without a GPU", "relevant": ["cpu-inference"]}
+{"qid": "q20", "query": "how many threads for CPU token generation", "relevant": ["cpu-inference"]}
+{"qid": "q21", "query": "docker published ports bypass ufw rules", "relevant": ["firewall-basics"]}
+{"qid": "q22", "query": "allow bursts of requests but limit average rate", "relevant": ["rate-limiting"]}
+{"qid": "q23", "query": "share one request limit across several API replicas", "relevant": ["rate-limiting"]}
+{"qid": "q24", "query": "ban IPs after repeated failed logins", "relevant": ["ssh-hardening"]}

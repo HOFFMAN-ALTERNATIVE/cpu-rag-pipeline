@@ -1,0 +1,59 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: lint · types · tests · py${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - name: ruff
+        run: ruff check . && ruff format --check .
+      - name: mypy --strict
+        run: mypy
+      - name: pytest (coverage gate 90%)
+        run: pytest --cov --cov-report=term-missing
+
+  retrieval-eval:
+    name: retrieval benchmark (bm25 vs dense vs hybrid)
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e .
+      - name: ingest + eval on the bundled corpus
+        run: |
+          cpurag ingest examples/corpus --index .cpurag
+          cpurag eval examples/queries.jsonl --index .cpurag -k 3 | tee report.json
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          r = json.load(open("report.json"))
+          print("| retriever | hit@3 | recall@3 | MRR | nDCG@3 | p95 ms |\n|---|---|---|---|---|---|")
+          for m, v in r.items():
+              print(f"| {m} | {v['hit@3']} | {v['recall@3']} | {v['mrr']} | {v['ndcg@3']} | {v['p95_ms']} |")
+          assert r["hybrid"]["hit@3"] >= 0.95, "hybrid retrieval quality regressed"
+          PY
