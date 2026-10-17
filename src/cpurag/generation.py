@@ -8,6 +8,7 @@ import urllib.request
 from collections.abc import Sequence
 from typing import Protocol
 
+from cpurag._net import http_base_url
 from cpurag.retrieval import Hit
 from cpurag.text import terms
 
@@ -80,7 +81,7 @@ class OpenAICompatibleLLM:
     def __init__(
         self, base_url: str, model: str, *, api_key: str = "", temperature: float = 0.1, timeout: float = 120
     ) -> None:
-        self.base_url, self.model = base_url.rstrip("/"), model
+        self.base_url, self.model = http_base_url(base_url), model
         self.api_key, self.temperature, self.timeout = api_key, temperature, timeout
 
     def complete(self, system: str, user: str) -> str:

@@ -1,6 +1,8 @@
+import pytest
 from conftest import FakeOpenAI
 
 from cpurag.chunking import Chunk
+from cpurag.embeddings import OpenAICompatibleEmbedder
 from cpurag.generation import (
     SYSTEM_PROMPT,
     ExtractiveLLM,
@@ -59,3 +61,11 @@ def test_openai_compatible_llm(fake_openai: str, pipeline: Pipeline) -> None:
     req = FakeOpenAI.requests[0]
     assert req["path"] == "/v1/chat/completions" and req["messages"][0]["content"] == SYSTEM_PROMPT
     assert req["auth"] == "Bearer t"
+
+
+@pytest.mark.parametrize("url", ["file:///etc/passwd", "ftp://host/", "localhost:8080", "http://"])
+def test_clients_reject_non_http_base_urls(url: str) -> None:
+    with pytest.raises(ValueError, match="http"):
+        OpenAICompatibleLLM(url, "m")
+    with pytest.raises(ValueError, match="http"):
+        OpenAICompatibleEmbedder(url, "m", 8)

@@ -95,7 +95,7 @@ class FlatIndex:
         cls: type[FlatIndex] = {"flat": FlatIndex, "int8": Int8Index}[info["kind"]]
         idx = cls(info["dim"])
         idx.ids, idx.meta = info["ids"], info["meta"]
-        with np.load(path / "vectors.npz") as data:
+        with np.load(path / "vectors.npz", allow_pickle=False) as data:
             idx._load_arrays(dict(data))
         return idx
 

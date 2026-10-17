@@ -34,6 +34,17 @@ jobs:
       - name: pytest (coverage gate 90%)
         run: pytest --cov --cov-report=term-missing
 
+  audit:
+    name: pip-audit (runtime dependencies)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - run: python -m pip install --upgrade pip && pip install . pip-audit
+      - run: pip-audit
+
   retrieval-eval:
     name: retrieval benchmark (bm25 vs dense vs hybrid)
     needs: test

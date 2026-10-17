@@ -14,6 +14,7 @@ from typing import Protocol, runtime_checkable
 import numpy as np
 import numpy.typing as npt
 
+from cpurag._net import http_base_url
 from cpurag.text import terms
 
 Matrix = npt.NDArray[np.float32]
@@ -100,7 +101,7 @@ class OpenAICompatibleEmbedder:
     def __init__(
         self, base_url: str, model: str, dim: int, *, api_key: str = "", timeout: float = 30
     ) -> None:
-        self.base_url = base_url.rstrip("/")
+        self.base_url = http_base_url(base_url)
         self.model = model
         self._dim = dim
         self.api_key = api_key

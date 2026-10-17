@@ -6,14 +6,9 @@
 ![coverage](https://img.shields.io/badge/coverage-99%25-brightgreen)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
-**Retrieval-augmented generation that runs entirely on a CPU — and proves its retrieval quality in CI.**
+Answer questions over your own documents on a CPU-only server, with citations, and know whether retrieval still works after every change. The pipeline is heading-aware chunking, embeddings, a float32 or int8 vector store, BM25 and dense retrieval fused with reciprocal rank fusion (RRF), and grounded answers from any OpenAI-compatible local model server.
 
-Structure-aware chunking → embeddings → vector store → **hybrid BM25 + dense retrieval fused with RRF** →
-citation-grounded answers from any OpenAI-compatible local model server. The only runtime dependency is NumPy;
-the default embedder needs no model download, so the whole pipeline (and its evaluation) is reproducible
-bit-for-bit on any laptop or CI runner.
-
-Designed and built solo as a reference for teams that want private, self-hosted RAG without a GPU bill.
+NumPy is the only runtime dependency. The default embedder is feature hashing, so there is no model download and every run, including the evaluation, is reproducible bit for bit. CI fails the build if hybrid hit@3 on the bundled query set drops below 0.95. 60 tests, 99 % branch coverage, `mypy --strict`.
 
 ## Architecture
 
@@ -48,8 +43,8 @@ flowchart LR
 |---|---|---|
 | Chunking | Markdown section tree → paragraph > sentence > word cut points, word-aligned overlap, exact `start/end` offsets | A chunk is about one topic; offsets enable source highlighting |
 | Embeddings | Signed feature hashing of stemmed unigrams, bigrams and char-trigrams, sublinear TF, corpus IDF; pluggable `Embedder` protocol + `/v1/embeddings` client | Zero downloads, deterministic, typo-tolerant baseline; swap in a neural model without code changes |
-| Vector store | Exact inner-product `FlatIndex`; `Int8Index` with per-vector scalar quantisation; metadata filters, deletes, `npz` persistence | int8 keeps ≥95% recall@10 at ~4x less RAM — matters on small VPSes |
-| Retrieval | Okapi BM25 (section titles folded in), dense, and weighted **RRF** hybrid; per-document de-duplication | RRF needs no score calibration and beats either retriever alone on mixed queries |
+| Vector store | Exact inner-product `FlatIndex`; `Int8Index` with per-vector scalar quantisation; metadata filters, deletes, `npz` persistence | int8 keeps ≥95% recall@10 at ~4x less RAM, which matters on small VPSes |
+| Retrieval | Okapi BM25 (section titles folded in), dense, and weighted **RRF** hybrid; per-document de-duplication | RRF needs no score calibration; it fuses rankings, so BM25 and dense scores never have to be comparable |
 | Generation | Budgeted, numbered context; system prompt enforcing grounded answers; citation validator drops hallucinated `[n]`; extractive fallback | Answers are auditable; works offline |
 | Evaluation | hit@k, recall@k, MRR, nDCG@k, latency percentiles, per-query misses | Retrieval quality is a tested contract, not a vibe |
 
@@ -81,17 +76,33 @@ print(ans.text, [ans.sources[i - 1].chunk.doc_id for i in ans.cited])
 | dense (hashing) | 1.00 | 0.98 | 1.00 | 0.98 | < 1 ms |
 | **hybrid RRF** | **1.00** | **0.98** | **1.00** | **0.98** | < 1 ms |
 
+Measured locally on an 8 vCPU VM; p95 for BM25 is 0.02 ms, dense 0.42 ms, hybrid 0.26 ms. The three retrievers tie on this corpus: 24 queries over a small bundled set are too easy to separate them. Treat the table as a regression gate, not as proof that hybrid beats BM25. A harder, larger query set is the way to show that.
+
 The CI `retrieval-eval` job re-runs this on every commit, publishes the table to the job summary and fails if
 hybrid hit@3 drops below 0.95. Bring your own `queries.jsonl` (`{"qid", "query", "relevant": [doc ids]}`)
 to benchmark your corpus or compare a neural embedder against the baseline.
 
 ## Quality bar
 
-- **56 tests**, **99% branch coverage** (gate: 90%), `mypy --strict`, ruff, Python 3.11–3.13 matrix
+- **60 tests**, **99% branch coverage** (gate: 90%), `mypy --strict`, ruff, Python 3.11–3.13 matrix
 - property-style checks: chunk offsets always map back to the source; flat search equals brute-force NumPy;
   int8 recall@10 ≥ 0.95 vs exact; RRF scores match the formula; hybrid never worse than its components
 - HTTP clients tested against an in-process fake OpenAI-compatible server (ordering, auth header, shape checks)
 
+## Design decisions
+
+ADRs: [0001 feature hashing as the default embedder](docs/adr/0001-hashing-embedder-default.md), [0002 RRF for hybrid retrieval](docs/adr/0002-rrf-hybrid-fusion.md), [0003 exact flat search with optional int8](docs/adr/0003-exact-flat-search.md).
+
+## Limits
+
+- Exact search is O(n) per query. I have only measured it on the bundled corpus; for large corpora switch to an ANN index (for example [hnsw-vector-search](https://github.com/HOFFMAN-ALTERNATIVE/hnsw-vector-search)).
+- The hashing embedder matches words and character trigrams, not meaning. Paraphrases with no shared vocabulary need a neural embedder through `/v1/embeddings`.
+- The index is a directory of JSON and `npz` files loaded fully into memory. No incremental updates on disk, no concurrent writers.
+- Answer quality depends on the local model; the pipeline only guarantees that cited sources exist and drops citations that point nowhere.
+- It is a library and CLI, not a service. Put it behind your own API if you need one.
+
+Security notes and reporting: [SECURITY.md](SECURITY.md).
+
 ## License
 
-MIT © Herman Hoffman
+MIT
