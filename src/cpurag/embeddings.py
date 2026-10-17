@@ -32,7 +32,8 @@ class Embedder(Protocol):
 def l2_normalize(m: Matrix) -> Matrix:
     norms = np.linalg.norm(m, axis=1, keepdims=True)
     norms[norms == 0] = 1.0
-    return (m / norms).astype(np.float32, copy=False)
+    out: Matrix = (m / norms).astype(np.float32, copy=False)
+    return out
 
 
 def _h(feature: str) -> int:
